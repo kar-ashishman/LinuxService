@@ -51,9 +51,12 @@ systemctl command syntax: `systemctl <action> <unit>`
 18. `sudo systemctl list-dependencies multi-user.target` - Lists units associated with the target
 19. `sudo systemctl list-dependencies myapp.service` - Lists units associated with the unit
 20. `sudo systemd-analyze critical-chain` - gives a chain of targets in the boot process
-21. `sudo systemd-analyze` - returns time taken for startup
-22. `sudo systemd-analyze blame` - returns significantly time taking services
-23. `sudo journalctl --rotate & sudo journalctl --vacuum-time=1s` - clear journalctl entries
+21. `systemctl list-dependencies --reverse myapp.service` - who depends on myapp
+22. `sudo systemd-analyze` - returns time taken for startup
+23. `sudo systemd-analyze blame` - returns significantly time taking services
+24. `sudo journalctl --rotate & sudo journalctl --vacuum-time=1s` - clear journalctl entries
+25. `sudo systemctl get-default` - returns the default.target group, generally multi-user.target
+
 
 <br>
 
@@ -94,13 +97,20 @@ service files have the following sections
    WorkingDirector=/opt/myapp     // similar to cd /opt/myapp and exec myapp. Runs the app from a dir.
    Environment="APP_MODE=production"
    Environment="LOG_LEVEL=debug"  // Environment variables APP_MODE and LOG_LEVEL is available to myapp
-ExecStart=/opt/myapp/myapp.sh     // Location of the service (should be executable sudo chmod +x opt/myapp/myapp.sh)
+   ExecStartPre=/opt/myapp/preapp.sh // App to run before main app, main app is run only if the preapp is successfully run
+   ExecStart=/opt/myapp/myapp.sh     // Location of the service (should be executable sudo chmod +x opt/myapp/myapp.sh)
+   ExecStartPost=/opt/myapp/postapp.sh // Same concept as ExecStart, just runs after main app
+   ExecStop=/opt/myapp/stopapp.sh // Run when the service is stopped `systemctl stop myapp.service`
+   ExecReload=/opt/myapp/reloadapp.sh // Run for `systemctl reload myapp`
    Restart=always //valid options: no, always, on-failure, (use on-failure for production)
    RestartSec=5 //wait 5secs and restart
    After=network.target // If systemd is starting network.target and myapp, then it will start network first. It wont start network if its not scheduled to start
    Before=network.target // Similar to after
+   RemainAfterExit=yes // options yes or no. If the program is a oneshot type *(explained later)*, even after exit, the service remains active. shows `active (exited)` 
    Requires=network.target // This creates a dependancy i.e. network.target must exist for myapp to start. Different from After and Before. Can be used with After/Before
    Wants=network.target // systemd will try to start network.target when myapp is being started. If network fails, myapp can still run if it can. Requires will not let myapp start if network has failed. Requires has stronger relationship. Wants can cause a service to start, requires just checks if the service exists.
+   TimeoutStartSec=30 // Allow up to 30secs for startup after which failure is reported
+   TimeoutStopSec=30 // Allow up to 30secs to gracefully shutdown
 3. [Install]
    WantedBy=multi-user.target     //Grouping of services. when we enable a service, it goes as a symlink to /etc/systemd/system/multi-user.target.wants/, other groups are multi-user.target, graphical.target, network.target, rescue.target, emergency.target
 ```
@@ -136,3 +146,27 @@ Runtime journal log data is stored at `run/log/journal`
 * `journalctl -u myapp -b` : shows all logs of myapp from current boot
 * `journalctl -u myapp --since "10 hour ago"` : shows logs from 10 hours ago
 * `journalctl -u myapp -p err -b` : shows error of myapp from current boot
+
+<br>
+
+> SERVICE TYPE & PROCESS LIFECYCLE
+
+The `type` directive is responsible to answer the following questions.
+* Is the process running
+* Does `ExecStart` launch the real daemon or a temp setup program ?
+* when startup is considered complete
+* how systemd stop application
+* how can an app tell systemd 'I am ready' ?
+
+Options of TYPE are
+* `simple`: for simple foreground apps, systemd considers the service started when process launched by `ExecStart` is in running state. Recommended for most simple applications
+* `exec`: Different from `simple`, systemd waits till operation has successfully replaced the service process with configured executable. More robust compared to `simple`
+* `forking`: Use forking when the base process may fork a child and die where the child survives.
+* `oneshot`: Use it when the program does something and dies. 
+* `notify`: for this type, the service notifies systemd exactly when it is ready. unlike other types where systemd just know the service exists
+
+`$MAINPID` can be used in the service file to identify the process in which the executable is running. example - `ExecReload=/bin/kill -HUP $MAINPID`
+
+
+
+
