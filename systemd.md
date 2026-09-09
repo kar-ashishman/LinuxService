@@ -107,11 +107,32 @@ ExecStart=/opt/myapp/myapp.sh     // Location of the service (should be executab
 
 
 
-```mermaid
-graph TD
-   A[Wake Up] --> B{Is it a weekday?}
-   B -- Yes --> C[Go to Work or School]
-   B -- No --> D[Sleep In]
-   C --> E[End of Day]
-   D --> E
-```
+> JOURNALCTL COMMANDS
+
+`systemd-journald` is systemd's logging service
+systemd captures all `stdout`, `stderr` of all services
+
+|journalctl commands|Descriptions|
+|---------------------|------------------------------------------|
+|``journalctl``|Entire journald log|
+|``journalctl -u myapp`` *(opt .service)*|logs coming out of myapp service|
+|``journalctl -u myapp -f`` *-f stands for follow*|follows the service's logs and the terminal stays attached. As new logs are generated they appear in the terminal|
+|`journalctl -u myapp -n 20`|show most recent logs|
+|`journalctl -u myapp --since today`|todays logs, other options `1 hour ago`, `10 minutes ago`|
+|`journalctl -u myapp --since "2026-09-09 18:00:00" --until "2026-09-09 19:00:00"`|start and end time specified|
+|`journalctl -b -u myapp`|journal entry of current boot of myapp|
+|`journalctl -b -1 -u myapp`|journal entry of previous boot of myapp|
+|`journalctl -p err -u myapp`|journal entry of errors of myapp <br> *linux error stacking - emerg-alert-crit-err-warn-notice-info-debug, -p err means till err everything will be returned*|
+|`journalctl -xe`|-x means add explanatory info when available, -e means jump to end|
+|`journalctl -k`|kernel messages. Journald is not just for systemd, works like dmesg|
+|`journalctl _PID=1234`|can filter based on PIDs|
+
+Persistent journal log data is stored at `/var/log/journal`
+Runtime journal log data is stored at `run/log/journal`
+
+### A example of steps to take while debugging
+* `systemctl status myapp`
+* `journalctl -u myapp -n 100` : shows last 100 logs of myapp
+* `journalctl -u myapp -b` : shows all logs of myapp from current boot
+* `journalctl -u myapp --since "10 hour ago"` : shows logs from 10 hours ago
+* `journalctl -u myapp -p err -b` : shows error of myapp from current boot
