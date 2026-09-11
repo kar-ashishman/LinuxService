@@ -16,7 +16,7 @@ Every file and directory has 3 types of permissions:
 `ls -l` : See permissions of files/directories present in the current directory in long list format <br>
 e.g. `ls -l` produces `drwxrwxr-x 6 vashish vashish 4096 Mar 20 11:29 J1939_AddressClaim` <br> <br>
 Following is the meaning - 
-* `d` : it is a directory (other options are : `r`-Regular File, `l`-Symbolic Link, `c`-Character Device, `b`-Block Device)
+* `d` : it is a directory (other options are : `-`-Regular File, `l`-Symbolic Link, `c`-Character Device, `b`-Block Device)
 * `rwx` : user permissions [read(r) write(w) execute(x)]
 * `rwx` : group permissions [read(r) write(w) execute(x)]
 * `r-x` : other permissions [read(r) No-Write(-) execute(x)]
@@ -69,9 +69,37 @@ This file.txt is a file stored in filesystem 2049 with a Inode numbered 1234567
 
 > Special permissions
 
+```
+Note - 
+su joe => Temporarily runs a terminal as account joe. su stands for switch user
+id => uid=504(joe) gid=505(joe) groups=505(joe), 507(sales). id command shows userid, groupid and groups for the user
+```
+
 * `chmod u+s program` : set userid permission allows to execute programs with privilege of owner <br>
   before `-rwxr-xr-x root root myprogram` --> `chmod 4755 myprogram` --> after `-rwsr-xr-x root root myprogram` <br>
-  for user `rwx` becomes `rws`. 
+  for user `rwx` becomes `rws`. its is called SUID - `set user id` <br>
+  Set user id means who ever executes the file, executes the file as the owner of the file <br>
+
+* Setting group ID of a folder means, anyone adding file to the folder, group ownership of the file is switched to the group ownership of the folder.
+  
+* `Set User ID` = 4  chmod 4777 file.txt <br> 
+  `Set Group ID` = 2 chmod 2777 file.txt <br>
+  `Set both` = 6 chmod 6777 file.txt <br>
+  `Set stickybit` = 1 chmod 1777 folder (No use of stickybit for files) <br>
+  `Remove the SUID and SGID` = 0 chmod 0777 file.txt <br>
+
+* STICKY BIT
+  `chmod +t folder` or `chmod -t folder` <br>
+  otherway of doing `chmod 1777 folder`
+  produces drwxrwxrwt <br>
+  setting the sticky bit, means anyone can add files to the folder. but only root or owner can delete the file. <br>
+  Example usecase = temp folder
+  
+
+`Note both letter s and t are smallcase letters if in original permissions x is present. If x is not present both letters show as upper case S and T`
+
+
+  
   
 
 
