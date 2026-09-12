@@ -143,6 +143,7 @@ Main
 
 best way to wait is `while(wait(NULL) != -1 || errno != ECHILD)` <br>
 include `<errno.h>` for getting `errno` and `ECHILD`
+`fork() can return -1` if forking is unsuccessful
 
 
 # INTERPROCESS COMMUNICATION `PIPES`
@@ -155,7 +156,53 @@ pipe(fd); // Returns -1 if pipe crreation fails
 Reading end fd[0]       Reading end fd[1]      
        =========================
 ```
-Exercise - Create a child and send some data to child and get some data back from child
+Exercise - Create a child and send some data from the child to the main process
+
+```
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main()
+{
+    int fd[2], id;
+    if(pipe(fd) == -1) {
+        printf("Error creating pipe");
+        return 1;
+    } id = fork();
+    if(id == -1) {
+        printf("Error forking");
+        return 2;
+    } if(id == 0) {
+        int x = 100;
+        close(fd[0]); // child doesnt read from the pipe. so read terminal can be closed
+        // write to the pipe a value of 100
+        if(write(fd[1], &x, sizeof(int)) == -1) return 3;
+        close(fd[1]); // close the write terminal after writing
+    } else {
+        // wait for child to process in Main process
+        while(wait(NULL) != -1);
+        int x;
+        close(fd[1]); // main process doesnt write from the pipe. so write terminal can be closed
+        if(read(fd[0], &x, sizeof(int)) == -1) return 4;
+        close(fd[0]); // close read terminal after read
+        printf("Read from pipe %d\n", x);
+    } return 0;
+}
+```
+
+# INTERPROCESS COMMUNICATION `fifo or namedpipes`
+
+`pipe` is not an actual file, they are in memory construct that acts as files. where we can read and write using file descriptors <br>
+`fifo` is an actual file that is stored. <br>
+Special rule for a FIFO is - a FIFO always hangs at read if anyother process or thread has not opened the FIFO for writing. (viceversa)
+FIFO can be created by using mkfifo("<name>", <permission e.g. 0777>) or by mkfifo command e.g. `mkfifo -m 644 pipe1` <br>
+open for WRITING a FIFO using c syntax `int fd = open("<fifo full path>", O_WRONLY)` or using `cat <fifopath>` <br>
+open for READING a FIFO using c syntax `int fd =  open("<fifo full path>", O_RDONLY)` or using `cat <fifopaht>` <br>
+open function call can fail and return a -1 <br>
+
+
+
 
 
 
