@@ -153,7 +153,7 @@ A pipe is an in-memory file with a read and write end <br>
 inf fd[2];
 pipe(fd); // Returns -1 if pipe crreation fails
        =========================
-Reading end fd[0]       Reading end fd[1]      
+Reading end fd[0]       Writing end fd[1]      
        =========================
 ```
 Exercise - Create a child and send some data from the child to the main process
