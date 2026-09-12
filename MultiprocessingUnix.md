@@ -195,11 +195,17 @@ int main()
 
 `pipe` is not an actual file, they are in memory construct that acts as files. where we can read and write using file descriptors <br>
 `fifo` is an actual file that is stored. <br>
-Special rule for a FIFO is - a FIFO always hangs at read if anyother process or thread has not opened the FIFO for writing. (viceversa)
+Special rule for a FIFO is - a FIFO always hangs at read if anyother process or thread has not opened the FIFO for writing. (viceversa) <br>
 FIFO can be created by using mkfifo("<name>", <permission e.g. 0777>) or by mkfifo command e.g. `mkfifo -m 644 pipe1` <br>
 open for WRITING a FIFO using c syntax `int fd = open("<fifo full path>", O_WRONLY)` or using `cat <fifopath>` <br>
 open for READING a FIFO using c syntax `int fd =  open("<fifo full path>", O_RDONLY)` or using `cat <fifopaht>` <br>
 open function call can fail and return a -1 <br>
+To use FIFOs in C programs these headers are needed
+```
+#include <types.h>
+#include <sys/stat.h>
+#include <errno.h>
+```
 
 
 
