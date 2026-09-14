@@ -190,6 +190,17 @@ int main()
     } return 0;
 }
 ```
+`read(fd[0])` is a blocking call if there are no data in the pipe. And if there is data, `read` removes the data from the pipe. <br>
+If there is a requirement to just check if there are data in the pipe use `select`, `fd_set`, `FD_SET()`, `FD_ISSET()` as follows. <br>
+```
+// calculate max fd number
+int maxfd = fd1[0] > fd2[0] ? fd1[0] : fd2[0]; 
+fd_set read_fds;
+FD_SET(fd, &read_fds);
+if(FD_ISSET(fd_read_end, &read_fds)) {
+  // Enters here if there is data in pipe ...
+}
+```
 
 # INTERPROCESS COMMUNICATION `fifo or namedpipes`
 
