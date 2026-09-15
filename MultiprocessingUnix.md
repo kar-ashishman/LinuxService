@@ -65,6 +65,7 @@ produces
 `1 2 3 4 5 6 7 8 9 10` <br>
 wait() return -1 if there is no child to wait for <br>
 or it returns the pid for which the wait got completed.
+`res` in the wait(&res) call, stores the status/info of how the process exited
 
 # SOME USEFUL APIS
 
