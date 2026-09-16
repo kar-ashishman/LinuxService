@@ -218,9 +218,28 @@ To use FIFOs in C programs these headers are needed
 #include <sys/stat.h>
 #include <errno.h>
 ```
+# INTERPROCESS COMMUNICATION `Shared Memory`
 
+`Shared Memory` creates memory region owned by kernel. This will allow sharing same variables across multiple process.<br>
+Use `mmap()` for creating shared memory.<br>
+## Include
+#include <sys/mman.h><br>
 
-
-
-
+## Declaration
+```
+int *counter;
+counter = mmap(
+    NULL,<br>
+    sizeof(int),
+    PROT_READ | PROT_WRITE,
+    MAP_SHARED | MAP_ANONYMOUS,
+    -1,
+    0);
+```
+### Arguments
+`NULL` means kernel chose the memory region <br>
+`sizeof(int)` means declaring the size of the shared memory<br>
+`PROT_READ | PROT_WRITE` means other process can read & write at the memory<br>
+`MAP_SHARED` means the map is shared between the process <br>
+`MAP_ANONYMOUS` means no file is used, Kernel provides private RAM & memory initialized to 0.<br>
 
