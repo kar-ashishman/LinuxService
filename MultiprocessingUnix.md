@@ -243,3 +243,96 @@ counter = mmap(
 `MAP_SHARED` means the map is shared between the process <br>
 `MAP_ANONYMOUS` means no file is used, Kernel provides private RAM & memory initialized to 0.<br>
 
+# INTERPROCESS COMMUNICATION `Semaphore`
+`Semaphore` is a synchronization mechanism used to control access to a shared resource. This is to prevent the handling of the shared resource in an unsafe way.
+For example, if process 1 is writing to a variable x, then using semaphore you can tell process 2 to wait until process 1 finishes write operation. This way process 2 will always read correct updated value.
+
+## How to create a semaphore?
+To create a semaphore, use sem_open()<br>
+```
+#include<semaphore.h>
+int main()
+{
+sem_t sem = sem_open("/semaphore_name",O_CREATE,0666,1);
+return 0;
+}
+```
+## SEM_OPEN Arguments
+- name: semaphore name<br>
+- oflag: create semaphore if not exists already<br>
+- mode: access for owner, group, others<br>
+- value: number of token available. If value is 1 it means when a process takes a semaphore,count reduces to 0 and other process needs to wait<br>
+
+## SEM_WAIT()
+`sem_wait(semaphore_name)` means acquiring semaphore to lock a shared resource
+
+## SEM_POST()
+`sem_post(semaphore_name)` means releasing semaphore to unlock the shared resource
+
+## SEM_UNLINK()
+`sem_unlink(/semaphore_name)` - It is commonly used to clean up named semaphores and prevent old semaphore objects from remaining in the system after a program exits unexpectedly.
+
+## Example
+```
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
+#include <semaphore.h>
+#include <fcntl.h>
+
+// creating shared variable
+
+int *counter;
+void inc_counter(int pid);
+int main()
+{
+    counter = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE,
+                   MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    *counter = 0;
+    sem_unlink("/semcnt");
+    sem_t *sem = sem_open("/semcnt", O_CREAT, 0666, 1);//Create semaphore
+    pid_t p1 = fork();
+    if (p1 == 0)
+    {
+        int i = 0;
+        for (i = 0; i < 100000; i++)
+        {
+            sem_wait(sem);//Acquire semaphore, entering critical section
+            inc_counter(1);
+            sem_post(sem);//Release semaphore, leaving critical section
+        }
+        exit(0);
+    }
+    pid_t p2 = fork();
+    if (p2 == 0)
+    {
+        int i = 0;
+        for (i = 0; i < 100000; i++)
+        {
+            sem_wait(sem);//Acquire semaphore, entering critical sectio
+            inc_counter(2);
+            sem_post(sem);//Release semaphore, leaving critical section
+        }
+        exit(0);
+    }
+
+    if (p1 != 0 && p2 != 0)
+    {
+        waitpid(p1, NULL, 0);
+        waitpid(p2, NULL, 0);
+
+        printf("Value of counter is %d\n", *counter);
+    }
+    sem_unlink("/semcnt");
+    return 0;
+}
+```
+In the above example, two process are created. counter is a shared memory that both process can access. Both process will increment the counter.<br>
+Using semaphore, when process 1 is incrementing the counter, it locks the semaphore and process 2 waits. When process 1 releases the semaphore then process 2 increments the counter. <br>
+
+Output:
+value of counter is 200000<br>
+
+Note: if semaphore is not used, then both process will try to modify counter resulting into wrong results.
