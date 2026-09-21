@@ -335,4 +335,60 @@ Using semaphore, when process 1 is incrementing the counter, it locks the semaph
 Output:
 value of counter is 200000<br>
 
-Note: if semaphore is not used, then both process will try to modify counter resulting into wrong results.
+Note: if semaphore is not used, then both process will try to modify counter resulting into wrong results.<br>
+
+# INTERPROCESS COMMUNICATION `Socketpair`
+`socketpair()` creates two connected sockets that enable bidirectional communication between processes on the same machine.
+The main difference between pipes and socket pairs is that a pipe provides unidirectional communication. For example, Process 1 can write to Process 2, and Process 2 can only read from Process 1. If Process 2 also needs to send data back to Process 1, a second pipe must be created:<br>
+Process 1 ---------> Process 2<br>
+Process 1 <--------- Process 2<br>
+
+## How to create socketpair()
+```
+#include<sys/socket.h>
+int sv[2];
+socketpair(AF_UNIX,SOCK_STREAM,0,sv);
+```
+- process can read and write to sv[0] & sv[1] (Process 1 <-------> sv[0] ===== sv[1] <-------> Process 2)<br>
+- domain: AF_UNIX is for local communication, AF_INET for TCP/IP communication<br>
+- byte_stream: SOCK_STREAM is for reliable byte stream<br>
+- protocol: 0 means default protocol for SOCK_STREAM + AF_UNIX<br>
+- sv: socket descriptors for read and write. Data written to sv[0] can be read from sv[1], and data written to sv[1] can be read from sv[0].<br>
+
+## Example program
+In this program parent process will send a value to child and child returns it by adding 5 to it.<br>
+```
+#include<sys/socket.h>
+#include<unistd.h>
+#include<stdio.h>
+
+int sv[2];//array to hold socket descriptors
+int main()
+{
+socketpair(AF_UNIX,SOCK_STREAM,0,sv);//creating socket descriptors
+
+pid_t p1=fork();//creating child process
+if(p1==0)//child process
+{
+  close[sv[0]);
+  int val;
+  read(sv[1],&val,sizeof(val));//reading from socket descriptor sv[1], when data available
+  printf("value received for addition is %d\n",val);
+  val+=5;
+  write(sv[1],&val,sizeof(val));//writing back the added value to sv[1]
+  exit(0);
+}
+else//parent process
+{
+close(sv[1]);
+int val=10;
+write(sv[0],&val,sizeof(val));//writing value to socket descriptor sv[0]
+read(sv[0],&val,sizeof(val));//reading value from socket descriptor sv[0] when data available
+printf("value after addition is %d\n",val);
+wait(NULL);
+}
+return 0;
+}
+```
+
+
